@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Uday Bhaskar Kale, AI/ML Engineer</title>
+<style>
+  :root{
+    --bg:#1e1e1e; --sidebar:#252526; --activitybar:#333333; --panel:#252526; --border:#3c3c3c;
+    --text:#d4d4d4; --text-dim:#858585; --statusbar:#007acc; --statusbar-bg:#333333; --tab-inactive:#2d2d2d;
+    --blue:#569cd6; --green:#4ec9b0; --orange:#ce9178; --yellow:#dcdcaa; --purple:#c586c0; --lightblue:#9cdcfe;
+    --mono:'SF Mono','Fira Code','Consolas',monospace;
+    --sans:-apple-system, BlinkMacSystemFont,'Segoe UI',sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth; scrollbar-width:none; -ms-overflow-style:none;}
+  html::-webkit-scrollbar{display:none;}
+  body{background:var(--bg); color:var(--text); font-family:var(--sans); line-height:1.65; font-size:14px; padding-bottom:50px; scrollbar-width:none; -ms-overflow-style:none;}
+  body::-webkit-scrollbar{display:none;}
+  a{color:inherit; text-decoration:none;}
+  code, .mono{font-family:var(--mono);}
+
+  .shell{display:grid; grid-template-columns:48px 230px 1fr;}
+
+  /* ACTIVITY BAR */
+  .activitybar{
+    background:var(--activitybar); display:flex; flex-direction:column; justify-content:space-between;
+    align-items:center; padding:14px 0; position:sticky; top:0; height:calc(100vh - 22px);
+  }
+  .ai-group{display:flex; flex-direction:column; gap:22px; align-items:center;}
+  .activitybar .ai{width:24px; height:24px; display:flex; align-items:center; justify-content:center; color:#c5c5c5; opacity:.7;}
+  .activitybar .ai svg{width:19px; height:19px; fill:none; stroke:currentColor; stroke-width:1.6; stroke-linecap:round; stroke-linejoin:round;}
+  .activitybar .ai.active{opacity:1; color:#fff; border-left:2px solid #fff; margin-left:-2px; padding-left:2px;}
+
+  /* SIDEBAR / EXPLORER */
+  .sidebar{background:var(--sidebar); border-right:1px solid var(--border); padding:10px 0 0; position:sticky; top:0; height:calc(100vh - 22px); overflow-y:auto; scrollbar-width:none; -ms-overflow-style:none;}
+  .sidebar::-webkit-scrollbar{display:none;}
+  .sidebar-title{display:flex; align-items:center; justify-content:space-between; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--text-dim); padding:4px 16px 12px 20px; font-weight:700;}
+  .sidebar-title .dots{opacity:.6; letter-spacing:1px;}
+
+  .open-editors{border-bottom:1px solid var(--border); padding-bottom:6px; margin-bottom:6px;}
+  .oe-head{display:flex; align-items:center; gap:6px; padding:4px 20px; font-size:11px; letter-spacing:.06em; color:var(--text-dim); font-weight:700; text-transform:uppercase; cursor:pointer;}
+  .oe-head:hover{color:var(--text);}
+  .oe-list.collapsed{display:none;}
+  .oe-item{display:flex; align-items:center; gap:8px; padding:4px 20px 4px 34px; font-size:12.5px; color:var(--text-dim);}
+
+  .folder-head{display:flex; align-items:center; gap:6px; padding:6px 16px 6px 20px; font-size:12px; font-weight:700; letter-spacing:.03em; color:var(--text); cursor:pointer;}
+  .folder-head:hover .folder-actions{opacity:1;}
+  .folder-head .folder-name{flex:1;}
+  .folder-actions{display:flex; gap:8px; opacity:.55; font-size:12px; transition:opacity .15s;}
+  .folder-actions span:hover{opacity:1;}
+
+  .filetree.collapsed{display:none;}
+  .filetree .deco{display:flex; align-items:center; gap:8px; padding:4px 20px; font-size:13px; color:var(--text-dim); opacity:.5; cursor:default;}
+  .filetree .deco .chevron{width:10px; font-size:10px;}
+  .filetree a{display:flex; align-items:center; gap:8px; padding:5px 20px; font-size:13px; color:var(--text); border-left:2px solid transparent;}
+  .filetree a:hover, .filetree a.active{background:#2a2d2e;}
+  .filetree a.active{border-left-color:var(--statusbar); background:#2a2d2e;}
+  .filetree .icon{width:14px; text-align:center; font-size:12px;}
+
+  /* MAIN / EDITOR CHROME */
+  .main{min-width:0; display:flex; flex-direction:column;}
+  .editor-topbar{position:sticky; top:0; z-index:90; background:var(--bg);}
+  .tabbar{display:flex; background:var(--panel); border-bottom:1px solid var(--border); overflow-x:auto;}
+  .tab{font-size:12.5px; padding:9px 8px 9px 14px; color:var(--text-dim); border-right:1px solid var(--border); white-space:nowrap; display:flex; align-items:center; gap:8px; cursor:pointer; background:var(--tab-inactive);}
+  .tab .icon{font-size:12px;}
+  .tab .close{opacity:0; font-size:14px; padding:1px 4px; border-radius:3px; margin-left:2px;}
+  .tab:hover .close{opacity:.7;}
+  .tab .close:hover{opacity:1 !important; background:#454545;}
+  .tab.active{color:var(--text); background:var(--bg); border-top:2px solid var(--statusbar); margin-top:-1px;}
+  .tab.active .close{opacity:.85;}
+
+  .editorwrap{display:flex;}
+  .editor{flex:1; min-width:0; padding:0 0 60px;}
+  .codeblock{display:flex;}
+  .linenums{padding:24px 14px 24px 20px; text-align:right; color:#5a5a5a; font-family:var(--mono); font-size:13px; user-select:none; line-height:1.8;}
+  .codebody{flex:1; padding:24px 24px 24px 0; font-family:var(--mono); font-size:13.5px; line-height:1.8; overflow-x:auto;}
+  /* hero code block: mute the syntax/boilerplate so the actual details (string values + status) pop */
+  .codeblock .kw{color:#726c78;} .codeblock .fn{color:#8f8a72;} .codeblock .type{color:#5f7a72;} .codeblock .cm{color:#5c5c52;}
+  .codeblock .prop{color:#7d94a3;}
+  .codeblock .val{color:var(--green); font-weight:600;}
+  .codeblock .pn{color:#5c5c5c;}
+  .kw{color:var(--purple);} .fn{color:var(--yellow);} .str{color:var(--orange);} .cm{color:#6a9955; font-style:italic;} .prop{color:var(--lightblue);} .type{color:var(--green);} .num{color:#b5cea8;}
+
+  section{padding:40px 24px 10px; max-width:920px;}
+  section#about{padding:2px 0 10px;}
+  .sectionlabel{font-family:var(--mono); font-size:12px; color:var(--text-dim); margin-bottom:4px;}
+  .sectionlabel .cm{color:#6a9955;}
+  .sectionsub{color:var(--text-dim); font-size:13px; margin-bottom:18px;}
+
+  .skillgrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px; margin-top:16px;}
+  .skillcard{background:var(--panel); border:1px solid var(--border); border-radius:4px; padding:16px;}
+  .skillcard .k{font-family:var(--mono); font-size:12px; margin-bottom:4px;}
+  .skillcard .k .prop{color:var(--lightblue);} .skillcard .k .str{color:var(--orange);}
+  .skillcard .plain{color:var(--text-dim); font-size:13px; margin:8px 0 10px;}
+  .pillrow{display:flex; flex-wrap:wrap; gap:6px;}
+  .pill{font-family:var(--mono); font-size:11px; padding:3px 8px; background:#2d2d2d; border:1px solid var(--border); border-radius:3px; color:var(--green);}
+
+  .projcard{background:var(--panel); border:1px solid var(--border); border-radius:4px; margin-bottom:16px;}
+  .projhead{padding:12px 16px; border-bottom:1px solid var(--border); font-family:var(--mono); font-size:14.5px; color:var(--green); font-weight:600; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:6px;}
+  .projhead .badge{font-size:10.5px; padding:2px 8px; border-radius:10px; background:#1a2733; color:var(--blue); border:1px solid #2a4a63;}
+  .projbody{padding:18px 20px;}
+  .projbody h3{font-size:15.5px; color:var(--green); margin-bottom:8px; font-family:var(--mono);}
+  .projbody .impact{font-size:13.5px; color:var(--text); margin-bottom:10px; padding:10px 12px; background:#1a2733; border-left:2px solid var(--statusbar); border-radius:3px;}
+  .projbody .achieve{font-size:12.5px; color:var(--text-dim); margin-bottom:10px; padding-left:2px;}
+  .projbody .achieve b{color:var(--yellow); font-weight:600;}
+  .livedemo{font-size:12.5px; color:var(--text-dim); margin-bottom:10px; padding:10px 12px; background:#1a2c22; border-left:2px solid var(--green); border-radius:3px; font-family:var(--mono);}
+  .livedemo .ld-label{color:var(--green); font-weight:600; font-family:var(--sans); letter-spacing:.2px;}
+  .livedemo a{color:var(--lightblue);}
+  .livedemo code{color:var(--yellow); background:rgba(255,255,255,.06); padding:1px 5px; border-radius:3px;}
+  .livedemo .ld-note{color:var(--orange); font-family:var(--sans); display:block; margin-top:4px; font-size:12px;}
+  .archbtn{display:inline-flex; align-items:center; gap:7px; font-family:var(--mono); font-size:12px; color:var(--lightblue); background:#1a2733; border:1px solid #2a4a63; border-radius:4px; padding:6px 12px; cursor:pointer; margin-bottom:10px;}
+  .archbtn:hover{background:#213850;}
+  .archbtn-sm{font-size:11px; padding:4px 9px; margin:2px 0 8px;}
+  .archbtn + .archbtn{margin-left:8px;}
+  .archmodal-overlay{position:fixed; inset:0; background:rgba(0,0,0,.65); display:none; align-items:center; justify-content:center; z-index:300; padding:24px;}
+  .archmodal-overlay.open{display:flex;}
+  .archmodal{background:var(--panel); border:1px solid var(--border); border-radius:6px; max-width:600px; width:100%; max-height:80vh; overflow-y:auto; padding:22px 24px; position:relative; box-shadow:0 16px 48px rgba(0,0,0,.55);}
+  .archmodal-close{position:absolute; top:12px; right:14px; background:none; border:none; color:var(--text-dim); font-size:20px; cursor:pointer; line-height:1; padding:4px;}
+  .archmodal-close:hover{color:var(--text);}
+  .archmodal-eyebrow{font-family:var(--mono); font-size:10.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.09em; margin-bottom:6px;}
+  .archmodal-title{font-family:var(--mono); font-size:15.5px; color:var(--green); margin-bottom:18px; padding-right:20px;}
+  .archmodal-flow{display:flex; flex-direction:column; align-items:center;}
+  .archmodal-step{background:#1e1e1e; border:1px solid var(--border); border-radius:4px; padding:10px 16px; color:var(--lightblue); font-family:var(--mono); font-size:13px; text-align:center; width:100%;}
+  .archmodal-arrow{color:var(--text-dim); font-family:var(--mono); font-size:15px; padding:4px 0;}
+  .techrow{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px;}
+  .projlinks{font-family:var(--mono); font-size:12px; display:flex; gap:16px;}
+  .projlinks a{color:var(--blue);}
+  .projlinks a:hover{text-decoration:underline;}
+
+  .moregrid{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; margin-top:8px;}
+  .morecard{background:var(--panel); border:1px solid var(--border); border-radius:4px; padding:14px 16px;}
+  .morecard h4{font-family:var(--mono); font-size:13px; color:var(--lightblue); margin-bottom:6px;}
+  .morecard p{color:var(--text-dim); font-size:12.5px; margin-bottom:8px;}
+  .morecard .tags{display:flex; flex-wrap:wrap; gap:5px;}
+  .morecard-links{font-family:var(--mono); font-size:11.5px; margin:8px 0 8px;}
+  .morecard-links a{color:var(--blue);}
+  .morecard-links a:hover{text-decoration:underline;}
+
+  .timeline{border-left:2px solid var(--border); padding-left:22px; margin-top:16px;}
+  .titem{position:relative; padding-bottom:26px;}
+  .titem::before{content:'●'; position:absolute; left:-27px; top:2px; color:var(--statusbar); font-size:10px;}
+  .titem.edu::before{color:var(--green);}
+  .titem .date{font-family:var(--mono); font-size:11.5px; color:var(--text-dim);}
+  .titem h3{font-size:14.5px; margin:3px 0 4px; color:var(--lightblue);}
+  .titem .role{color:var(--text-dim); font-weight:400; font-family:var(--sans);}
+  .titem p{color:var(--text-dim); font-size:13px;}
+  .titem ul{margin:6px 0 0 18px; color:var(--text-dim); font-size:13px;}
+  .titem li{margin-bottom:3px;}
+
+  .contactcard{background:var(--panel); border:1px solid var(--border); border-radius:6px; padding:34px; margin:20px 0 40px;}
+  .contactcard .sectionlabel{margin-bottom:12px;}
+  .contactcard p{color:var(--text-dim); font-size:13.5px; margin-bottom:16px;}
+  .btn{font-family:var(--mono); font-size:12.5px; padding:9px 16px; border-radius:4px; border:1px solid var(--border); color:var(--text); display:inline-block;}
+  .btn:hover{border-color:var(--statusbar); color:var(--statusbar);}
+  .btnrow{display:flex; gap:10px; flex-wrap:wrap;}
+
+  /* BOTTOM PANEL (decorative terminal) */
+  .bottompanel{position:fixed; left:278px; right:0; bottom:22px; z-index:95; background:var(--panel); border-top:1px solid var(--border);}
+  .bp-tabs{display:flex; align-items:center; gap:0; padding:0 10px; height:28px;}
+  .bp-tab{font-family:var(--sans); font-size:10.5px; letter-spacing:.05em; color:var(--text-dim); padding:0 10px; height:28px; display:flex; align-items:center; cursor:default;}
+  .bp-tab.active{color:var(--text); cursor:pointer; border-bottom:1px solid var(--statusbar);}
+  .bp-spacer{flex:1;}
+  .bp-toggle{cursor:pointer; color:var(--text-dim); padding:0 8px; font-size:12px;}
+  .bp-toggle:hover{color:var(--text);}
+  .bp-body{max-height:0; overflow:hidden; transition:max-height .25s ease; font-family:var(--mono); font-size:12.5px; color:var(--text-dim); padding:0 16px;}
+  .bottompanel.expanded .bp-body{max-height:160px; padding:8px 16px 14px; overflow-y:auto;}
+  .bp-line{margin-bottom:6px;}
+  .bp-prompt{color:var(--green); margin-right:6px;}
+  .bp-cursor{animation:blink 1s step-start infinite;}
+  @keyframes blink{50%{opacity:0;}}
+
+  /* STATUS BAR */
+  .statusbar{position:fixed; left:0; right:0; bottom:0; z-index:100; background:var(--statusbar-bg); color:#c5c5c5; font-size:12px; padding:0 12px; height:22px; display:flex; align-items:center; justify-content:space-between; border-top:1px solid var(--border);}
+  .statusbar .left, .statusbar .right{display:flex; gap:14px; align-items:center;}
+
+  .reveal{opacity:0; transform:translateY(10px); transition:opacity .45s ease, transform .45s ease;}
+  .reveal.in{opacity:1; transform:none;}
+
+  @media (max-width:900px){
+    .shell{grid-template-columns:1fr;}
+    .activitybar{display:none;}
+    .sidebar{position:relative; top:auto; height:auto;}
+    .editor-topbar{position:relative; top:auto;}
+    .bottompanel{display:none;}
+    .statusbar{position:relative; height:auto; flex-wrap:wrap; gap:4px; padding:6px 12px;}
+    body{padding-bottom:0;}
+    section{padding:28px 16px 4px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div class="activitybar">
+    <div class="ai-group">
+      <div class="ai active" title="Explorer"><svg viewBox="0 0 24 24"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h4l1.7 2H19.5A1.5 1.5 0 0 1 21 8.5v9A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z"/></svg></div>
+      <div class="ai" title="Search"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6"/><line x1="15" y1="15" x2="20.5" y2="20.5"/></svg></div>
+      <div class="ai" title="Source Control"><svg viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="12" r="2"/><path d="M6 7v10"/><path d="M6 12c0-3.3 2.7-5 6-5h4"/></svg></div>
+      <div class="ai" title="Run and Debug"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polygon points="10,8 10,16 16,12"/></svg></div>
+      <div class="ai" title="Remote Explorer"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1.5"/><line x1="8" y1="20" x2="16" y2="20"/><line x1="12" y1="16" x2="12" y2="20"/></svg></div>
+      <div class="ai" title="Testing"><svg viewBox="0 0 24 24"><path d="M10 3h4M10.5 3v6.5L5.8 18a2 2 0 0 0 1.8 3h8.8a2 2 0 0 0 1.8-3l-4.7-8.5V3"/></svg></div>
+    </div>
+    <div class="ai-group">
+      <div class="ai" title="Account"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20c0-4.2 3.4-6.5 7.5-6.5s7.5 2.3 7.5 6.5"/></svg></div>
+      <div class="ai" title="Settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3.2M12 17.8V21M4.9 4.9l2.3 2.3M16.8 16.8l2.3 2.3M3 12h3.2M17.8 12H21M4.9 19.1l2.3-2.3M16.8 7.2l2.3-2.3"/></svg></div>
+    </div>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-title">Explorer <span class="dots">•••</span></div>
+
+    <div class="open-editors">
+      <div class="oe-head"><span class="chevron">▾</span>Open Editors</div>
+      <div class="oe-list" id="oe-list">
+        <div class="oe-item"><span class="icon">🐍</span>profile.py</div>
+        <div class="oe-item"><span class="icon">🦀</span>contact.rs</div>
+      </div>
+    </div>
+
+    <div class="folder-head" id="folder-toggle">
+      <span class="chevron" id="folder-chevron">▾</span>
+      <span class="folder-name">PORTFOLIO</span>
+      <span class="folder-actions">
+        <span title="Refresh">↻</span><span title="Collapse All">—</span>
+      </span>
+    </div>
+
+    <div class="filetree" id="filetree">
+      <div class="deco"><span class="chevron">›</span><span class="icon">📁</span>__pycache__</div>
+      <div class="deco"><span class="chevron">›</span><span class="icon">📁</span>venv</div>
+      <div class="deco"><span class="icon">⚙️</span>.env</div>
+      <div class="deco"><span class="icon">◆</span>.gitignore</div>
+      <div class="deco"><span class="icon">🐳</span>Dockerfile</div>
+      <a href="#about" class="active" data-icon="🐍" data-name="profile.py" data-section="About"><span class="icon">🐍</span>profile.py</a>
+      <a href="#skills" data-icon="🐍" data-name="skills.py" data-section="Skills"><span class="icon">🐍</span>skills.py</a>
+      <a href="#projects" data-icon="🐍" data-name="projects.py" data-section="Projects"><span class="icon">🐍</span>projects.py</a>
+      <a href="#more-projects" data-icon="🐍" data-name="more_projects.py" data-section="More Projects"><span class="icon">🐍</span>more_projects.py</a>
+      <a href="#education" data-icon="📝" data-name="education.md" data-section="Education"><span class="icon">📝</span>education.md</a>
+      <a href="#experience" data-icon="📝" data-name="experience.md" data-section="Experience"><span class="icon">📝</span>experience.md</a>
+      <a href="#contact" data-icon="🦀" data-name="contact.rs" data-section="Contact"><span class="icon">🦀</span>contact.rs</a>
+      <a href="resume.pdf" download="Uday_Bhaskar_Kale_CV.pdf" data-icon="📕" data-name="resume.pdf" data-section="Résumé"><span class="icon">📕</span>resume.pdf</a>
+      <div class="deco"><span class="icon">📄</span>requirements.txt</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="editor-topbar">
+      <div class="tabbar">
+        <div class="tab active" data-target="about"><span class="icon">🐍</span>profile.py<span class="close">×</span></div>
+        <div class="tab" data-target="skills"><span class="icon">🐍</span>skills.py<span class="close">×</span></div>
+        <div class="tab" data-target="projects"><span class="icon">🐍</span>projects.py<span class="close">×</span></div>
+        <div class="tab" data-target="more-projects"><span class="icon">🐍</span>more_projects.py<span class="close">×</span></div>
+        <div class="tab" data-target="education"><span class="icon">📝</span>education.md<span class="close">×</span></div>
+        <div class="tab" data-target="experience"><span class="icon">📝</span>experience.md<span class="close">×</span></div>
+        <div class="tab" data-target="contact"><span class="icon">🦀</span>contact.rs<span class="close">×</span></div>
+      </div>
+    </div>
+
+    <div class="editorwrap">
+    <div class="editor">
+      <div class="codeblock reveal">
+        <div class="linenums">1<br>2<br>3<br>4<br>5<br>6<br>7<br>8<br>9<br>10<br>11<br>12</div>
+        <div class="codebody">
+          <span class="kw">class</span> <span class="fn">AIEngineer</span><span class="pn">:</span><br>
+          &nbsp;&nbsp;<span class="kw">def</span> <span class="fn">__init__</span><span class="pn">(</span><span class="kw">self</span><span class="pn">):</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">self</span><span class="pn">.</span><span class="prop">name</span> <span class="pn">=</span> <span class="str">"Uday Bhaskar Kale"</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">self</span><span class="pn">.</span><span class="prop">focus</span> <span class="pn">=</span> <span class="pn">[</span><span class="str">"LLMs"</span><span class="pn">,</span> <span class="str">"RAG"</span><span class="pn">,</span> <span class="str">"AI agents"</span><span class="pn">,</span> <span class="str">"fine-tuning"</span><span class="pn">]</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">self</span><span class="pn">.</span><span class="prop">location</span> <span class="pn">=</span> <span class="str">"Berlin, Germany"</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">self</span><span class="pn">.</span><span class="prop">education</span> <span class="pn">=</span> <span class="str">"M.Sc. Cognitive Systems, Uni Potsdam (2024–2026)"</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">self</span><span class="pn">.</span><span class="prop">status</span> <span class="pn">=</span> <span class="val">OPEN_TO_FULLTIME</span><br>
+          <br>
+          &nbsp;&nbsp;<span class="kw">def</span> <span class="fn">build</span><span class="pn">(</span><span class="kw">self</span><span class="pn">,</span> <span class="pn">problem</span><span class="pn">:</span> <span class="type">str</span><span class="pn">)</span> <span class="pn">-&gt;</span> <span class="type">Product</span><span class="pn">:</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="pn">research</span>&nbsp;&nbsp;<span class="pn">=</span> <span class="kw">self</span><span class="pn">.</span><span class="fn">explore</span><span class="pn">(</span><span class="pn">problem</span><span class="pn">)</span>&nbsp;&nbsp;&nbsp;<span class="cm"># read the literature, scope it</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="pn">prototype</span> <span class="pn">=</span> <span class="kw">self</span><span class="pn">.</span><span class="fn">evaluate</span><span class="pn">(</span><span class="pn">research</span><span class="pn">)</span>&nbsp;&nbsp;<span class="cm"># test against real baselines</span><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;<span class="kw">return</span> <span class="kw">self</span><span class="pn">.</span><span class="fn">ship</span><span class="pn">(</span><span class="pn">prototype</span><span class="pn">)</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="cm"># end-to-end: research → eval → production</span>
+        </div>
+      </div>
+      <div style="padding:0 24px 14px;">
+        <a href="#projects" class="btn" style="margin-right:10px;">▸ View Projects</a>
+        <a href="resume.pdf" download="Uday_Bhaskar_Kale_CV.pdf" class="btn">↓ resume.pdf</a>
+        <a href="https://github.com/properexit" class="btn" style="margin-left:10px;">GitHub ↗</a>
+        <a href="https://www.linkedin.com/in/properexit" class="btn">LinkedIn ↗</a>
+      </div>
+
+      <section id="about" class="reveal">
+        <div class="codeblock">
+          <div class="linenums">13<br>14<br>15<br>16<br>17<br>18<br>19<br>20<br>21<br>22<br>23<br>24<br>25<br>26<br>27</div>
+          <div class="codebody">
+            <span class="cm"># about.me</span><br>
+            <span class="str">"""</span><br>
+            <span class="str">In short: I build systems around large language models (research tools,</span><br>
+            <span class="str">retrieval pipelines, and AI agents) and test how well they actually work</span><br>
+            <span class="str">instead of just assuming they do. My work spans a corpus research platform</span><br>
+            <span class="str">for linguistics researchers, a fact-checking system that beats standard RAG</span><br>
+            <span class="str">by a wide margin, a safety layer that keeps AI agents from taking risky</span><br>
+            <span class="str">actions unchecked, and several smaller studies probing exactly where LLMs</span><br>
+            <span class="str">succeed and fail.</span><br>
+            <br>
+            <span class="str">Before this, I led engineering as a co-founder at an agri-tech startup and</span><br>
+            <span class="str">worked on enterprise systems integration at Accenture, so I care as much</span><br>
+            <span class="str">about whether something ships and holds up as I do about the research</span><br>
+            <span class="str">behind it.</span><br>
+            <span class="str">"""</span>
+          </div>
+        </div>
+      </section>
+
+      <section id="skills" class="reveal">
+        <div class="sectionlabel"><span class="cm">// </span>Skills</div>
+        <div class="skillgrid">
+          <div class="skillcard">
+            <div class="k"><span class="prop">"category"</span>: <span class="str">"NLP &amp; LLMs"</span></div>
+            <div class="plain">Building and evaluating systems that understand and generate language.</div>
+            <div class="pillrow"><span class="pill">RAG</span><span class="pill">AI Agents</span><span class="pill">Prompt Engineering</span><span class="pill">Model Evaluation</span><span class="pill">LangGraph</span></div>
+          </div>
+          <div class="skillcard">
+            <div class="k"><span class="prop">"category"</span>: <span class="str">"Machine Learning"</span></div>
+            <div class="plain">Training and fine-tuning models for classification, retrieval, and prediction.</div>
+            <div class="pillrow"><span class="pill">PyTorch</span><span class="pill">Hugging Face Transformers</span><span class="pill">scikit-learn</span></div>
+          </div>
+          <div class="skillcard">
+            <div class="k"><span class="prop">"category"</span>: <span class="str">"Data &amp; Analysis"</span></div>
+            <div class="plain">Working with large datasets, embeddings, and search.</div>
+            <div class="pillrow"><span class="pill">pandas</span><span class="pill">NumPy</span><span class="pill">FAISS</span><span class="pill">Feature Engineering</span></div>
+          </div>
+          <div class="skillcard">
+            <div class="k"><span class="prop">"category"</span>: <span class="str">"Software Engineering"</span></div>
+            <div class="plain">Turning models into services people can actually use.</div>
+            <div class="pillrow"><span class="pill">FastAPI</span><span class="pill">Streamlit</span><span class="pill">Docker</span><span class="pill">Git</span><span class="pill">REST APIs</span></div>
+          </div>
+          <div class="skillcard">
+            <div class="k"><span class="prop">"category"</span>: <span class="str">"Programming"</span></div>
+            <div class="plain">Core languages and data layers.</div>
+            <div class="pillrow"><span class="pill">Python</span><span class="pill">Java</span><span class="pill">SQL</span><span class="pill">NoSQL</span></div>
+          </div>
+          <div class="skillcard">
+            <div class="k"><span class="prop">"category"</span>: <span class="str">"Enterprise Systems"</span></div>
+            <div class="plain">From two years integrating enterprise business systems.</div>
+            <div class="pillrow"><span class="pill">SAP PI/PO</span><span class="pill">SAP Basis</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="projects" class="reveal">
+        <div class="sectionlabel"><span class="cm">// </span>Projects</div>
+
+        <div class="projcard">
+          <div class="projhead">Kakapo: NL2SQL Corpus Query Engine <span class="badge">NL2SQL Product</span></div>
+          <div class="projbody">
+            <div class="impact">An AI-engineered product built end-to-end and shipped to production, not a research demo: at its core is a self-hosted <b>NL2SQL engine</b> that lets non-technical users query and annotate large text corpora (German Bundestag speeches, climate-change discourse) in plain English. The LLM only ever sees the database schema, never the underlying data, a privacy constraint designed into the system from the start.</div>
+            <div class="achieve">Shipped and running in production: role-based access control, automated backup/restore, Docker with reverse-proxy/HTTPS, serving real users today at the University of Potsdam.</div>
+            <div class="livedemo"><span class="ld-label">● Live demo:</span> <a href="http://kakapo.ling.uni-potsdam.de:8000/login" target="_blank" rel="noopener">kakapo.ling.uni-potsdam.de:8000/login</a> (<code>guest</code> / <code>silentspring</code>)<span class="ld-note">Accessible only within the University of Potsdam network.</span></div>
+            <button class="archbtn" data-arch="kakapo_core">⌗ Architecture: Core Platform</button>
+            <button class="archbtn" data-arch="kakapo_nl2sql">⌗ Architecture: NL2SQL Engine</button>
+            <div class="techrow"><span class="pill">NL2SQL</span><span class="pill">FastAPI</span><span class="pill">SQLite</span><span class="pill">Docker</span><span class="pill">ChromaDB</span><span class="pill">spaCy</span><span class="pill">Groq API</span></div>
+            <div class="projlinks"><span style="color:var(--text-dim);">Private repo (live demo above)</span></div>
+          </div>
+        </div>
+
+        <div class="projcard">
+          <div class="projhead">Argument-Aware Fact Checking <span class="badge">Research Module</span></div>
+          <div class="projbody">
+            <div class="impact">A fact-checking system that weighs <i>argumentative</i> evidence, not just keyword overlap, to judge how true a claim is, then distills that reasoning into a small model that can run entirely offline, with no dependence on large cloud models at inference time.</div>
+            <div class="achieve">Beats a flat-RAG baseline by <b>+0.26 macro-F1</b> (0.388 vs 0.127) on the LIAR-Arg benchmark, within 0.017 of an oracle upper bound, and edges out a published supervised baseline. The distilled 1.5B local model retains <b>85%</b> of a 120B-parameter teacher's accuracy. Fully reproducible: fixed seeds, published model checkpoints on Hugging Face.</div>
+            <button class="archbtn" data-arch="argrag">⌗ View architecture</button>
+            <div class="techrow"><span class="pill">SentenceTransformers</span><span class="pill">BM25+Dense</span><span class="pill">DeBERTa-v3 (NLI)</span><span class="pill">Qwen</span><span class="pill">Cerebras</span><span class="pill">LoRA distillation</span></div>
+            <div class="projlinks"><a href="https://github.com/properexit/argument-aware-rag" target="_blank" rel="noopener">→ GitHub</a></div>
+          </div>
+        </div>
+
+        <div class="projcard">
+          <div class="projhead">Turix: AI Execution Authority Layer <span class="badge">Python Library</span></div>
+          <div class="projbody">
+            <div class="impact">A safety control layer that sits between an AI agent's decisions and the real world: before an agent can take an action (a payment, an access grant, an infrastructure change), Turix checks it against policy and either allows, denies, or escalates it to a human, with a full audit trail.</div>
+            <div class="achieve">Fail-closed by design (denies by default if unreachable), tenant-scoped, idempotent retries, versioned and hashed policies for auditability. Original systems-design work on AI agent safety, not a course assignment.</div>
+            <button class="archbtn" data-arch="turix">⌗ View architecture</button>
+            <div class="techrow"><span class="pill">FastAPI</span><span class="pill">Pydantic</span><span class="pill">JWT</span></div>
+            <div class="projlinks"><a href="https://github.com/seerlink/turix" target="_blank" rel="noopener">→ GitHub</a></div>
+          </div>
+        </div>
+
+        <div class="projcard">
+          <div class="projhead">Medical Triage Agent <span class="badge">Agentic AI</span></div>
+          <div class="projbody">
+            <div class="impact">A decision-support agent (explicitly not a diagnostic tool) that reads a patient's described symptoms, classifies urgency, and decides whether to monitor, ask a clarifying question, or escalate to a human, showing the reasoning behind every decision.</div>
+            <div class="achieve">Clean perception → reasoning → action agent loop that keeps the ML prediction and the decision policy as separate, inspectable steps, built to behave like an agent, not a chatbot.</div>
+            <button class="archbtn" data-arch="triage">⌗ View architecture</button>
+            <div class="techrow"><span class="pill">DistilBERT</span><span class="pill">Hugging Face Transformers</span><span class="pill">Groq</span><span class="pill">Streamlit</span></div>
+            <div class="projlinks"><a href="https://github.com/properexit/medical-triage-ai-agent" target="_blank" rel="noopener">→ GitHub</a></div>
+          </div>
+        </div>
+
+        <div class="projcard">
+          <div class="projhead">Geo AI Agent <span class="badge">Arcadis Hackathon</span></div>
+          <div class="projbody">
+            <div class="impact">A multi-agent system that reads maps, planning documents, and government land-use/flood-zone data, then writes an evidence-linked risk report (with an interactive map) for a given site, using a fully local LLM so no site data leaves the machine.</div>
+            <div class="achieve">Deliberately separates deterministic rule-based scoring from LLM-generated explanations, so every conclusion in the report is traceable back to a specific rule or data source.</div>
+            <button class="archbtn" data-arch="geoai">⌗ View architecture</button>
+            <div class="techrow"><span class="pill">GeoPandas</span><span class="pill">Shapely</span><span class="pill">OSMnx</span><span class="pill">Streamlit</span><span class="pill">Ollama (Mistral)</span><span class="pill">Folium</span></div>
+            <div class="projlinks"><a href="https://github.com/properexit/geo-agentic-ai" target="_blank" rel="noopener">→ GitHub</a></div>
+          </div>
+        </div>
+
+        <div class="projcard">
+          <div class="projhead">Internal Documentation RAG Assistant <span class="badge">RAG Tool</span></div>
+          <div class="projbody">
+            <div class="impact">A retrieval-augmented QA system for internal engineering docs, engineered to prioritize correctness over creativity: every answer is grounded strictly in retrieved Markdown content, with an explicit refusal when the docs don't contain the answer and full source attribution on every response, designed to never quietly hallucinate.</div>
+            <div class="achieve">Fully local and reproducible, no paid APIs: FAISS semantic search over chunked docs, FLAN-T5 grounded generation with deterministic decoding, source-cited answers surfaced through a Streamlit UI showing the answer, its sources, and the retrieved debug context.</div>
+            <button class="archbtn" data-arch="docsrag">⌗ View architecture</button>
+            <div class="techrow"><span class="pill">FAISS</span><span class="pill">SentenceTransformers (e5-base)</span><span class="pill">FLAN-T5</span><span class="pill">Streamlit</span></div>
+            <div class="projlinks"><a href="https://github.com/properexit/internal-docs-rag" target="_blank" rel="noopener">→ GitHub</a></div>
+          </div>
+        </div>
+
+        <div class="projcard">
+          <div class="projhead">Commit-Message Bug Localization <span class="badge">SE Research</span></div>
+          <div class="projbody">
+            <div class="impact">A practical bug-localization system for large Python codebases (demonstrated on pandas, ~11,000 commits): given just a commit message describing a bug, it predicts and ranks the source files most likely responsible. A strong, interpretable ML baseline does the heavy lifting; an LLM reranker adds semantic reasoning on top through an explicit LangGraph agent pipeline, built as a post-commit sanity checker and code-review aid, not a replacement for debugging.</div>
+            <div class="achieve">TF-IDF + Logistic Regression baseline alone reaches <b>Precision@1 0.5468</b>, <b>Precision@3 0.7682</b>, <b>Precision@5 0.8635</b>. A Groq/LLaMA reranker then adds semantic reasoning over the ML model's top-5 candidates via a 3-node LangGraph state machine (ml_candidates → shuffle_candidates → llm_rerank), with candidate shuffling built in specifically to remove positional bias.</div>
+            <button class="archbtn" data-arch="buglocalization">⌗ View architecture</button>
+            <div class="techrow"><span class="pill">scikit-learn (TF-IDF)</span><span class="pill">LangGraph</span><span class="pill">Groq (LLaMA-4 Scout)</span></div>
+            <div class="projlinks"><a href="https://github.com/properexit/commit-message-bug-localization" target="_blank" rel="noopener">→ GitHub</a></div>
+          </div>
+        </div>
+
+        <div class="projcard">
+          <div class="projhead">Construct-Conditioned NL2SQL Evaluation <span class="badge">Research</span></div>
+          <div class="projbody">
+            <div class="impact">A study measuring exactly which kinds of SQL queries (joins, subqueries, negation, aggregation...) large language models get wrong when translating plain English into SQL, and testing whether smarter, construct-aware retry prompting can fix it.</div>
+            <div class="achieve">Improved accuracy from <b>72.2% → 75.4%</b> on the Spider benchmark via construct-aware retries, with up to <b>+15pp</b> gains on the hardest query types (self-joins). A controlled ablation confirmed the gain came from the retry mechanism itself, not just better prompt wording.</div>
+            <button class="archbtn" data-arch="nl2sqleval">⌗ View architecture</button>
+            <div class="techrow"><span class="pill">Qwen</span><span class="pill">Cerebras (gpt-oss-120B)</span><span class="pill">Spider / BIRD / SEDE</span></div>
+            <div class="projlinks"><a href="https://github.com/properexit/NL2SQL" target="_blank" rel="noopener">→ GitHub</a></div>
+          </div>
+        </div>
+
+        <div class="projcard">
+          <div class="projhead">Dialogue-Game LLM Evaluation <span class="badge">Multilingual Eval</span></div>
+          <div class="projbody">
+            <div class="impact">An interactive evaluation framework, built on ClemBench, that tests chat LLMs with a cooperative sentence-building game instead of a static benchmark: a rule-enforcing GameMaster referees a Helper and a Seeker through constrained turns, surfacing failure modes (rule violations, over-generation, thematic drift) that single-turn benchmarks miss entirely. Run in both English and Urdu (low-resource) against a human baseline.</div>
+            <div class="achieve">GPT-3.5/GPT-4 and open models (LLaMA, Gemma) evaluated against human players across easy/hard noun-pair difficulty tiers. Larger models showed more stable constraint adherence, but every model degraded significantly in Urdu, while human players kept perfect rule adherence and higher creativity: a concrete, measured multilingual generalization gap.</div>
+            <button class="archbtn" data-arch="dialogueeval">⌗ View architecture</button>
+            <div class="techrow"><span class="pill">ClemBench</span><span class="pill">GPT-3.5 / GPT-4</span><span class="pill">LLaMA</span><span class="pill">Gemma</span></div>
+            <div class="projlinks"><a href="https://github.com/properexit/dialogue-llm-evaluator" target="_blank" rel="noopener">→ GitHub</a></div>
+          </div>
+        </div>
+
+      </section>
+
+      <section id="more-projects" class="reveal">
+        <div class="sectionlabel"><span class="cm">// </span>More Projects</div>
+        <div class="sectionsub">Smaller in scope, still real, evaluated work.</div>
+        <div class="moregrid">
+          <div class="morecard">
+            <h4>Offensive-Language Detection</h4>
+            <p>Cross-lingual offensive-language detection: 0.73 macro-F1 in English; Arabic few-shot transfer scaled from 0.44 → 0.85 F1 with LoRA fine-tuning.</p>
+            <button class="archbtn archbtn-sm" data-arch="offlang">⌗ Architecture</button>
+            <div class="morecard-links"><a href="https://github.com/properexit/offensive-language-detection" target="_blank" rel="noopener">→ GitHub</a></div>
+            <div class="tags"><span class="pill">Transformers</span><span class="pill">PEFT/LoRA</span><span class="pill">Docker</span></div>
+          </div>
+          <div class="morecard">
+            <h4>Reddit Claim Detection</h4>
+            <p>Detects and highlights self-medication claims in Reddit health posts; 0.88 F1, with an honest report of a real model calibration weakness found via zero-shot testing.</p>
+            <button class="archbtn archbtn-sm" data-arch="redditclaim">⌗ Architecture</button>
+            <div class="morecard-links"><a href="https://github.com/properexit/self-medication-claim-detection" target="_blank" rel="noopener">→ GitHub</a></div>
+            <div class="tags"><span class="pill">BERT-mini</span><span class="pill">scikit-learn</span></div>
+          </div>
+          <div class="morecard">
+            <h4>Financial Sentiment XAI</h4>
+            <p>Explainable financial sentiment classifier using gradient-based attribution to highlight influential words, and to surface a real dataset bias it found.</p>
+            <button class="archbtn archbtn-sm" data-arch="finsent">⌗ Architecture</button>
+            <div class="morecard-links"><a href="https://github.com/properexit/financial-sentiment-xai" target="_blank" rel="noopener">→ GitHub</a></div>
+            <div class="tags"><span class="pill">DistilBERT</span><span class="pill">Streamlit</span></div>
+          </div>
+          <div class="morecard">
+            <h4>Audio-Visual Modality Attention</h4>
+            <p>Multimodal event classifier that learns to trust audio vs. video adaptively, verified by muting/blurring one modality and watching attention shift accordingly.</p>
+            <button class="archbtn archbtn-sm" data-arch="avmodality">⌗ Architecture</button>
+            <div class="morecard-links"><a href="https://github.com/properexit/audio-visual-event-detection" target="_blank" rel="noopener">→ GitHub</a></div>
+            <div class="tags"><span class="pill">PyTorch</span><span class="pill">torchvision</span><span class="pill">torchaudio</span></div>
+          </div>
+          <div class="morecard">
+            <h4>Drug-GNN</h4>
+            <p>In-progress research: graph neural network + gene-expression model predicting drug sensitivity, with a learned per-drug gene mask validated against known mechanisms of action.</p>
+            <button class="archbtn archbtn-sm" data-arch="druggnn">⌗ Architecture</button>
+            <div class="tags"><span class="pill">PyTorch</span><span class="pill">RDKit</span><span class="pill">scikit-learn</span></div>
+          </div>
+          <div class="morecard">
+            <h4>Heron</h4>
+            <p>Personal research library: a dependency-free causal-reasoning layer that builds falsifiable causal beliefs from observed state transitions, infrastructure for agents, not a trained model.</p>
+            <button class="archbtn archbtn-sm" data-arch="heron">⌗ Architecture</button>
+            <div class="morecard-links"><a href="https://github.com/seerlink/heron" target="_blank" rel="noopener">→ GitHub</a> &nbsp;<a href="https://test.pypi.org/project/heron-core/" target="_blank" rel="noopener">→ PyPI</a></div>
+            <div class="tags"><span class="pill">Pure Python</span><span class="pill">MIT licensed</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="education" class="reveal">
+        <div class="sectionlabel"><span class="cm"># </span>Education</div>
+        <div class="timeline">
+          <div class="titem edu">
+            <div class="date">2024 — Oct 2026 (expected)</div>
+            <h3>M.Sc. Cognitive Systems <span class="role">· University of Potsdam, Germany</span></h3>
+            <p>Focus: NLP, Machine Learning, Computational Linguistics, Cognitive Architectures, Agentic AI.</p>
+          </div>
+          <div class="titem edu">
+            <div class="date">2017 — 2021</div>
+            <h3>B.E. Computer Engineering <span class="role">· University of Pune, India</span></h3>
+            <p>CGPA: 8.93 / 10.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="experience" class="reveal">
+        <div class="sectionlabel"><span class="cm"># </span>Experience</div>
+        <div class="timeline">
+          <div class="titem">
+            <div class="date">Jan 2023 — May 2024</div>
+            <h3>Technical Lead / Co-Founder <span class="role">· Seerlink Analytics Pvt Ltd, India</span></h3>
+            <ul>
+              <li>Built and deployed two Flutter/Firebase applications supporting dairy supply-chain management.</li>
+              <li>Designed data validation and reporting pipelines for daily milk collection records.</li>
+              <li>Led development end-to-end, from requirements gathering through deployment and maintenance.</li>
+            </ul>
+          </div>
+          <div class="titem">
+            <div class="date">Aug 2021 — Dec 2022</div>
+            <h3>Application Development Analyst <span class="role">· Accenture, India</span></h3>
+            <ul>
+              <li>Developed and maintained SAP PI/PO integrations across enterprise production systems.</li>
+              <li>Implemented data mapping and interface orchestration for reliable data exchange.</li>
+              <li>Supported deployment, debugging, and production issue resolution with cross-functional teams.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section id="contact" class="reveal">
+        <div class="contactcard">
+          <div class="sectionlabel"><span class="cm">// </span>Contact</div>
+          <p>Open to full-time AI/ML/LLM engineering roles. Based in Berlin, open to relocating for the right opportunity. Happy to talk about any project above in more depth.</p>
+          <div class="btnrow">
+            <a href="mailto:ubk8899@gmail.com" class="btn" style="background:var(--statusbar); border-color:var(--statusbar); color:#fff;">✉ ubk8899@gmail.com</a>
+            <a href="https://github.com/properexit" class="btn">GitHub</a>
+            <a href="https://www.linkedin.com/in/properexit" class="btn">LinkedIn</a>
+          </div>
+        </div>
+      </section>
+    </div>
+    </div>
+  </main>
+</div>
+
+<div class="bottompanel" id="bottompanel">
+  <div class="bp-tabs">
+    <span class="bp-tab">PROBLEMS</span>
+    <span class="bp-tab">OUTPUT</span>
+    <span class="bp-tab">DEBUG CONSOLE</span>
+    <span class="bp-tab active" id="bp-terminal-tab">TERMINAL</span>
+    <span class="bp-spacer"></span>
+    <span class="bp-toggle" id="bp-toggle">︿</span>
+  </div>
+  <div class="bp-body" id="bp-body">
+    <div class="bp-line"><span class="bp-prompt">(venv) uday@portfolio ~ %</span>whoami</div>
+    <div class="bp-line">Uday Bhaskar Kale, AI/ML Engineer, M.Sc. Cognitive Systems @ Uni Potsdam</div>
+    <div class="bp-line"><span class="bp-prompt">(venv) uday@portfolio ~ %</span>echo $STATUS</div>
+    <div class="bp-line">Open to full-time AI/ML/LLM engineering roles</div>
+    <div class="bp-line"><span class="bp-prompt">(venv) uday@portfolio ~ %</span><span class="bp-cursor">▌</span></div>
+  </div>
+</div>
+
+<div class="statusbar">
+  <div class="left"><span>🖥️ macbook-air-local</span><span>🌿 main</span><span>⊘ 0</span><span>⚠ 0</span></div>
+  <div class="right"><span>Spaces: 4</span><span>UTF-8</span><span>LF</span><span id="sb-lang">🐍 Python</span><span id="sb-pos">Ln 12, Col 1</span><span>🔔</span></div>
+</div>
+
+<div class="archmodal-overlay" id="archmodal-overlay">
+  <div class="archmodal">
+    <button class="archmodal-close" id="archmodal-close" aria-label="Close">×</button>
+    <div class="archmodal-eyebrow">architecture</div>
+    <div class="archmodal-title" id="archmodal-title"></div>
+    <div class="archmodal-flow" id="archmodal-flow"></div>
+  </div>
+</div>
+
+<script>
+  const els = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); } });
+  }, {threshold:.08});
+  els.forEach(el=>io.observe(el));
+
+  // Explorer: collapse/expand root folder
+  const folderToggle = document.getElementById('folder-toggle');
+  const filetreeEl = document.getElementById('filetree');
+  const folderChevron = document.getElementById('folder-chevron');
+  folderToggle.addEventListener('click', ()=>{
+    const collapsed = filetreeEl.classList.toggle('collapsed');
+    folderChevron.textContent = collapsed ? '▸' : '▾';
+  });
+
+  // Explorer: collapse/expand open editors
+  const oeHead = document.querySelector('.oe-head');
+  const oeList = document.getElementById('oe-list');
+  oeHead.addEventListener('click', ()=>{
+    const collapsed = oeList.classList.toggle('collapsed');
+    oeHead.querySelector('.chevron').textContent = collapsed ? '▸' : '▾';
+  });
+
+  // Bottom panel (terminal) toggle
+  const bottompanel = document.getElementById('bottompanel');
+  const bpToggle = document.getElementById('bp-toggle');
+  const bpTerminalTab = document.getElementById('bp-terminal-tab');
+  function toggleBP(){
+    const expanded = bottompanel.classList.toggle('expanded');
+    bpToggle.textContent = expanded ? '︾' : '︿';
+  }
+  bpToggle.addEventListener('click', toggleBP);
+  bpTerminalTab.addEventListener('click', toggleBP);
+
+  // Architecture modal — each project's pipeline, shown as a popup figure instead of inline
+  const ARCH_DATA = {
+    kakapo_core: { title:'Kakapo: Core Platform', steps:[
+      'User login (RBAC)', 'SQL query / annotation UI', 'SQLite corpus DB (Bundestag speeches, climate discourse)', 'spaCy annotation layer', 'Backup/restore + Docker deployment'
+    ]},
+    kakapo_nl2sql: { title:'Kakapo: NL2SQL Engine', steps:[
+      'Plain-English question', 'NL2SQL engine (LLM + schema-only prompting)', 'Generated SQL', 'SQLite corpus DB', 'Results returned to user'
+    ]},
+    offlang: { title:'Offensive-Language Detection', steps:[
+      'Text input', 'Transformer classifier', 'LoRA fine-tuning (cross-lingual transfer)', 'F1 evaluation'
+    ]},
+    redditclaim: { title:'Reddit Claim Detection', steps:[
+      'Reddit post', 'BERT-mini classifier', 'Claim highlighting', 'Calibration check (zero-shot)'
+    ]},
+    finsent: { title:'Financial Sentiment XAI', steps:[
+      'Financial text', 'DistilBERT sentiment classifier', 'Gradient-based attribution', 'Bias report'
+    ]},
+    avmodality: { title:'Audio-Visual Modality Attention', steps:[
+      'Audio + video input', 'Modality-attention fusion', 'Event classification', 'Ablation test (mute/blur)'
+    ]},
+    druggnn: { title:'Drug-GNN', steps:[
+      'Molecule graph + gene expression', 'GNN + learned gene mask', 'Drug sensitivity prediction', 'Mechanism-of-action validation'
+    ]},
+    heron: { title:'Heron', steps:[
+      'Observed state transitions', 'Causal belief builder', 'Falsifiable causal graph'
+    ]},
+    argrag: { title:'Argument-Aware Fact Checking', steps:[
+      'Claim', 'Evidence retrieval (BM25 + Dense)', 'Argument-aware NLI scoring (DeBERTa)', 'Verdict + confidence', 'LoRA-distilled 1.5B model (offline)'
+    ]},
+    geoai: { title:'Geo AI Agent', steps:[
+      'Site query', 'Maps / land-use / flood data (GeoPandas, OSMnx)', 'Deterministic rule-based scoring', 'Local LLM explanations (Ollama)', 'Interactive report (Streamlit + Folium)'
+    ]},
+    turix: { title:'Turix: AI Execution Authority Layer', steps:[
+      'Agent action request', 'Policy engine (versioned, hashed)', 'Allow / Deny / Escalate', 'Audit trail (tenant-scoped)'
+    ]},
+    nl2sqleval: { title:'Construct-Conditioned NL2SQL Evaluation', steps:[
+      'NL question', 'LLM → SQL (Qwen / Cerebras)', 'Construct-aware error analysis', 'Construct-aware retry prompt', 'Re-evaluate (Spider / BIRD / SEDE)'
+    ]},
+    triage: { title:'Medical Triage Agent', steps:[
+      'Patient symptoms', 'DistilBERT urgency classifier', 'Reasoning agent (Groq)', 'Monitor / Clarify / Escalate', 'Streamlit UI'
+    ]},
+    dialogueeval: { title:'Dialogue-Game LLM Evaluation', steps:[
+      'Noun-pair instance (English / Urdu)', 'GameMaster (rule enforcement)', 'Helper (sentence building, ≤3 words/turn) ↔ Seeker (word guessing)', 'Automatic metrics (constraint adherence, leakage) + manual metrics (creativity)'
+    ]},
+    docsrag: { title:'Internal Documentation RAG Assistant', steps:[
+      'Markdown docs', 'Ingestion (clean + chunk)', 'Embeddings (SentenceTransformer e5-base)', 'FAISS vector index', 'Query-time retrieval (top-k)', 'FLAN-T5 grounded generation (refuse if not found)', 'Streamlit UI (answer + sources)'
+    ]},
+    buglocalization: { title:'Commit-Message Bug Localization', steps:[
+      'Commit message', 'TF-IDF + Logistic Regression (ML baseline)', 'Top-5 candidate files', 'Shuffle (bias mitigation)', 'LLM reranker (Groq / LLaMA via LangGraph)', 'Final ranked file list'
+    ]}
+  };
+  const archOverlay = document.getElementById('archmodal-overlay');
+  const archTitle = document.getElementById('archmodal-title');
+  const archFlow = document.getElementById('archmodal-flow');
+  const archClose = document.getElementById('archmodal-close');
+  function openArchModal(key){
+    const data = ARCH_DATA[key];
+    if(!data) return;
+    archTitle.textContent = data.title;
+    archFlow.innerHTML = data.steps.map((s,i)=>
+      '<div class="archmodal-step">'+s+'</div>' + (i < data.steps.length-1 ? '<div class="archmodal-arrow">↓</div>' : '')
+    ).join('');
+    archOverlay.classList.add('open');
+  }
+  function closeArchModal(){ archOverlay.classList.remove('open'); }
+  document.querySelectorAll('.archbtn').forEach(btn=>{
+    btn.addEventListener('click', ()=> openArchModal(btn.dataset.arch));
+  });
+  archClose.addEventListener('click', closeArchModal);
+  archOverlay.addEventListener('click', e=>{ if(e.target === archOverlay) closeArchModal(); });
+  document.addEventListener('keydown', e=>{ if(e.key === 'Escape') closeArchModal(); });
+
+  // File/section registry — drives sidebar highlight, active tab, breadcrumb, status bar language
+  const FILES = [
+    {id:'about', name:'profile.py', section:'About', lang:'🐍 Python'},
+    {id:'skills', name:'skills.py', section:'Skills', lang:'🐍 Python'},
+    {id:'projects', name:'projects.py', section:'Projects', lang:'🐍 Python'},
+    {id:'more-projects', name:'more_projects.py', section:'More Projects', lang:'🐍 Python'},
+    {id:'education', name:'education.md', section:'Education', lang:'📝 Markdown'},
+    {id:'experience', name:'experience.md', section:'Experience', lang:'📝 Markdown'},
+    {id:'contact', name:'contact.rs', section:'Contact', lang:'🦀 Rust'}
+  ];
+  const sbLang = document.getElementById('sb-lang');
+
+  function setActiveFile(id){
+    const file = FILES.find(f=>f.id===id);
+    if(!file) return;
+    document.querySelectorAll('.filetree a').forEach(x=>x.classList.remove('active'));
+    document.querySelector('.filetree a[href="#'+id+'"]')?.classList.add('active');
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelector('.tab[data-target="'+id+'"]')?.classList.add('active');
+    if(sbLang) sbLang.textContent = file.lang;
+  }
+
+  const sectionObserver = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{ if(entry.isIntersecting){ setActiveFile(entry.target.id); } });
+  }, {rootMargin:'-15% 0px -70% 0px', threshold:0});
+  FILES.forEach(f=>{ const el = document.getElementById(f.id); if(el) sectionObserver.observe(el); });
+
+  // Safety net: the last section (contact) has no room below it to ever satisfy the
+  // rootMargin band above, so the observer can never mark it active on its own —
+  // once the page is scrolled to (or near) the bottom, force it active directly.
+  function checkBottomReached(){
+    const atBottom = (window.innerHeight + Math.ceil(window.scrollY)) >= document.documentElement.scrollHeight - 4;
+    if(atBottom) setActiveFile(FILES[FILES.length - 1].id);
+  }
+  window.addEventListener('scroll', checkBottomReached, {passive:true});
+
+  // Sidebar + hero-button links: smooth scroll, activate immediately on click
+  document.querySelectorAll('a[href^="#"]').forEach(a=>{
+    a.addEventListener('click', e=>{
+      const id = a.getAttribute('href');
+      if(id.length>1){
+        e.preventDefault();
+        setActiveFile(id.slice(1));
+        document.querySelector(id)?.scrollIntoView({behavior:'smooth'});
+      }
+    });
+  });
+
+  // Editor tabs: click to navigate, close buttons are decorative
+  document.querySelectorAll('.tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      setActiveFile(tab.dataset.target);
+      document.querySelector('#'+tab.dataset.target)?.scrollIntoView({behavior:'smooth'});
+    });
+  });
+  document.querySelectorAll('.tab .close').forEach(x=>{
+    x.addEventListener('click', e=>{ e.stopPropagation(); e.preventDefault(); });
+  });
+
+  setActiveFile('about');
+</script>
+</body>
+</html>
