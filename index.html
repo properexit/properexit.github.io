@@ -116,6 +116,8 @@
   .archmodal-overlay{position:fixed; inset:0; background:rgba(0,0,0,.65); display:none; align-items:center; justify-content:center; z-index:300; padding:24px;}
   .archmodal-overlay.open{display:flex;}
   .archmodal{background:var(--panel); border:1px solid var(--border); border-radius:6px; max-width:600px; width:100%; max-height:80vh; overflow-y:auto; padding:22px 24px; position:relative; box-shadow:0 16px 48px rgba(0,0,0,.55);}
+  .archmodal.wide{max-width:960px;}
+  .archmodal-img{display:block; width:100%; height:auto; border-radius:4px; background:#fff;}
   .archmodal-close{position:absolute; top:12px; right:14px; background:none; border:none; color:var(--text-dim); font-size:20px; cursor:pointer; line-height:1; padding:4px;}
   .archmodal-close:hover{color:var(--text);}
   .archmodal-eyebrow{font-family:var(--mono); font-size:10.5px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.09em; margin-bottom:6px;}
@@ -351,8 +353,7 @@
             <div class="impact">An AI-engineered product built end-to-end and shipped to production, not a research demo: at its core is a self-hosted <b>NL2SQL engine</b> that lets non-technical users query and annotate large text corpora (German Bundestag speeches, climate-change discourse) in plain English. The LLM only ever sees the database schema, never the underlying data, a privacy constraint designed into the system from the start.</div>
             <div class="achieve">Shipped and running in production: role-based access control, automated backup/restore, Docker with reverse-proxy/HTTPS, serving real users today at the University of Potsdam.</div>
             <div class="livedemo"><span class="ld-label">● Live demo:</span> <a href="http://kakapo.ling.uni-potsdam.de:8000/login" target="_blank" rel="noopener">kakapo.ling.uni-potsdam.de:8000/login</a> (<code>guest</code> / <code>silentspring</code>)<span class="ld-note">Accessible only within the University of Potsdam network.</span></div>
-            <button class="archbtn" data-arch="kakapo_core">⌗ Architecture: Core Platform</button>
-            <button class="archbtn" data-arch="kakapo_nl2sql">⌗ Architecture: NL2SQL Engine</button>
+            <button class="archbtn" data-arch="kakapo">⌗ View architecture</button>
             <div class="techrow"><span class="pill">NL2SQL</span><span class="pill">FastAPI</span><span class="pill">SQLite</span><span class="pill">Docker</span><span class="pill">ChromaDB</span><span class="pill">spaCy</span><span class="pill">Groq API</span></div>
             <div class="projlinks"><span style="color:var(--text-dim);">Private repo (live demo above)</span></div>
           </div>
@@ -621,12 +622,7 @@
 
   // Architecture modal — each project's pipeline, shown as a popup figure instead of inline
   const ARCH_DATA = {
-    kakapo_core: { title:'Kakapo: Core Platform', steps:[
-      'User login (RBAC)', 'SQL query / annotation UI', 'SQLite corpus DB (Bundestag speeches, climate discourse)', 'spaCy annotation layer', 'Backup/restore + Docker deployment'
-    ]},
-    kakapo_nl2sql: { title:'Kakapo: NL2SQL Engine', steps:[
-      'Plain-English question', 'NL2SQL engine (LLM + schema-only prompting)', 'Generated SQL', 'SQLite corpus DB', 'Results returned to user'
-    ]},
+    kakapo: { title:'Kakapo / CorpusQuery: System Architecture', image:'architecture.svg' },
     offlang: { title:'Offensive-Language Detection', steps:[
       'Text input', 'Transformer classifier', 'LoRA fine-tuning (cross-lingual transfer)', 'F1 evaluation'
     ]},
@@ -671,6 +667,7 @@
     ]}
   };
   const archOverlay = document.getElementById('archmodal-overlay');
+  const archModalBox = archOverlay.querySelector('.archmodal');
   const archTitle = document.getElementById('archmodal-title');
   const archFlow = document.getElementById('archmodal-flow');
   const archClose = document.getElementById('archmodal-close');
@@ -678,9 +675,15 @@
     const data = ARCH_DATA[key];
     if(!data) return;
     archTitle.textContent = data.title;
-    archFlow.innerHTML = data.steps.map((s,i)=>
-      '<div class="archmodal-step">'+s+'</div>' + (i < data.steps.length-1 ? '<div class="archmodal-arrow">↓</div>' : '')
-    ).join('');
+    if(data.image){
+      archFlow.innerHTML = '<img class="archmodal-img" src="'+data.image+'" alt="'+data.title+'">';
+      archModalBox.classList.add('wide');
+    } else {
+      archFlow.innerHTML = data.steps.map((s,i)=>
+        '<div class="archmodal-step">'+s+'</div>' + (i < data.steps.length-1 ? '<div class="archmodal-arrow">↓</div>' : '')
+      ).join('');
+      archModalBox.classList.remove('wide');
+    }
     archOverlay.classList.add('open');
   }
   function closeArchModal(){ archOverlay.classList.remove('open'); }
